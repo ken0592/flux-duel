@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flux Duel</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="top-bar">
+        <div>
+          <p class="eyebrow">Simultaneous area duel</p>
+          <h1>Flux Duel</h1>
+        </div>
+        <div class="match-tools">
+          <label class="toggle">
+            <input id="cpuToggle" type="checkbox" checked>
+            <span>CPU Red</span>
+          </label>
+          <button id="newMatchButton" class="ghost-button" type="button">New Match</button>
+        </div>
+      </header>
+
+      <section class="score-strip" aria-label="Match score">
+        <div class="score-card blue-side">
+          <span class="score-label">Blue</span>
+          <strong id="blueScore">0</strong>
+          <span id="blueStatus">Ready</span>
+        </div>
+        <div class="round-card">
+          <span>Round</span>
+          <strong><span id="roundNumber">1</span>/<span id="roundLimit">12</span></strong>
+          <button id="resolveButton" type="button">Resolve</button>
+        </div>
+        <div class="score-card red-side">
+          <span class="score-label">Red</span>
+          <strong id="redScore">0</strong>
+          <span id="redStatus">Ready</span>
+        </div>
+      </section>
+
+      <section class="game-layout">
+        <aside class="player-panel blue-panel" aria-label="Blue controls">
+          <div class="panel-heading">
+            <h2>Blue</h2>
+            <span id="blueLockBadge" class="lock-badge">Open</span>
+          </div>
+          <div class="control-group">
+            <span class="group-label">Action</span>
+            <div id="blueActions" class="button-grid action-grid"></div>
+          </div>
+          <div class="control-group">
+            <span class="group-label">Direction</span>
+            <div id="blueDirections" class="button-grid dir-grid"></div>
+          </div>
+          <button id="blueLock" class="lock-button blue-lock" type="button">Lock Blue</button>
+        </aside>
+
+        <section class="board-zone" aria-label="Game board">
+          <div id="board" class="board"></div>
+          <div class="legend" aria-label="Tile legend">
+            <span><b class="legend-dot bonus"></b>Bonus</span>
+            <span><b class="legend-dot bloom"></b>Bloom</span>
+            <span><b class="legend-dot slip"></b>Slip</span>
+            <span><b class="legend-dot rift"></b>Rift</span>
+            <span><b class="legend-dot static"></b>Static</span>
+          </div>
+        </section>
+
+        <aside class="player-panel red-panel" aria-label="Red controls">
+          <div class="panel-heading">
+            <h2>Red</h2>
+            <span id="redLockBadge" class="lock-badge">Open</span>
+          </div>
+          <div class="control-group">
+            <span class="group-label">Action</span>
+            <div id="redActions" class="button-grid action-grid"></div>
+          </div>
+          <div class="control-group">
+            <span class="group-label">Direction</span>
+            <div id="redDirections" class="button-grid dir-grid"></div>
+          </div>
+          <button id="redLock" class="lock-button red-lock" type="button">Lock Red</button>
+        </aside>
+      </section>
+
+      <section class="lower-deck">
+        <div class="feed-panel">
+          <div class="panel-heading">
+            <h2>Match Feed</h2>
+            <button id="clearFeedButton" class="tiny-button" type="button">Clear</button>
+          </div>
+          <ol id="feed" class="feed"></ol>
+        </div>
+        <div class="rules-panel">
+          <h2>Board State</h2>
+          <div class="stat-grid">
+            <span>Neutral</span><strong id="neutralCount">0</strong>
+            <span>Flux</span><strong id="fluxCount">0</strong>
+            <span>Traps</span><strong id="trapCount">0</strong>
+            <span>Lead</span><strong id="leadText">Even</strong>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="matchModal" class="modal-backdrop" hidden>
+      <section class="result-modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+        <p class="eyebrow">Final score</p>
+        <h2 id="resultTitle">Match Complete</h2>
+        <p id="resultCopy"></p>
+        <button id="modalNewMatchButton" type="button">Play Again</button>
+      </section>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
