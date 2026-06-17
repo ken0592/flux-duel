@@ -633,6 +633,10 @@ h2 {
   background: rgba(0, 0, 0, 0.45);
 }
 
+.modal-backdrop[hidden] {
+  display: none;
+}
+
 .result-modal {
   width: min(440px, 100%);
   border: 1px solid #111;
