@@ -1,14 +1,21 @@
 "use strict";
 
 const SIZE = 5;
-const MAX_TURNS = 10;
+const MAX_TURNS = 12;
 const PLAYERS = ["blue", "red"];
-const MOVES = {
-  up: { label: "Up", icon: "↑", dr: -1, dc: 0 },
-  left: { label: "Left", icon: "←", dr: 0, dc: -1 },
-  stay: { label: "Stay", icon: "•", dr: 0, dc: 0 },
-  right: { label: "Right", icon: "→", dr: 0, dc: 1 },
-  down: { label: "Down", icon: "↓", dr: 1, dc: 0 }
+
+const ACTIONS = {
+  move: { label: "Move", steps: 1 },
+  dash: { label: "Dash", steps: 2 },
+  strike: { label: "Strike", steps: 0 }
+};
+
+const DIRECTIONS = {
+  north: { label: "N", dr: -1, dc: 0 },
+  west: { label: "W", dr: 0, dc: -1 },
+  center: { label: "C", dr: 0, dc: 0 },
+  east: { label: "E", dr: 0, dc: 1 },
+  south: { label: "S", dr: 1, dc: 0 }
 };
 
 const state = {
@@ -16,12 +23,12 @@ const state = {
   gameOver: false,
   cpuRed: true,
   goldIndex: 12,
-  lastClashIndex: null,
+  marks: { strike: [], clash: null },
   log: [],
   cells: [],
   players: {
-    blue: makePlayer("blue", "Blue", { r: 0, c: 0 }, "stay"),
-    red: makePlayer("red", "Red", { r: SIZE - 1, c: SIZE - 1 }, "stay")
+    blue: makePlayer("blue", "Blue", { r: 0, c: 0 }),
+    red: makePlayer("red", "Red", { r: SIZE - 1, c: SIZE - 1 })
   }
 };
 
@@ -29,61 +36,25 @@ const boardEl = document.getElementById("board");
 const logEl = document.getElementById("log");
 const modalEl = document.getElementById("resultModal");
 
-function makePlayer(id, name, pos, move) {
+function makePlayer(id, name, pos) {
   return {
     id,
     name,
     pos: { ...pos },
-    move
+    action: "move",
+    direction: "center"
   };
 }
 
-function cellIndex(pos) {
-  return pos.r * SIZE + pos.c;
-}
-
-function posFromIndex(index) {
-  return { r: Math.floor(index / SIZE), c: index % SIZE };
-}
-
-function samePos(a, b) {
-  return a.r === b.r && a.c === b.c;
-}
-
-function inBounds(pos) {
-  return pos.r >= 0 && pos.c >= 0 && pos.r < SIZE && pos.c < SIZE;
-}
-
-function randomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
-function roll() {
-  return randomInt(6) + 1;
-}
-
-function resetGame() {
-  state.turn = 1;
-  state.gameOver = false;
-  state.lastClashIndex = null;
-  state.log = [];
-  state.cells = Array.from({ length: SIZE * SIZE }, () => ({ owner: null }));
-  state.players.blue = makePlayer("blue", "Blue", { r: 0, c: 0 }, "stay");
-  state.players.red = makePlayer("red", "Red", { r: SIZE - 1, c: SIZE - 1 }, "stay");
-  state.cells[cellIndex(state.players.blue.pos)].owner = "blue";
-  state.cells[cellIndex(state.players.red.pos)].owner = "red";
-  placeGold();
-  modalEl.hidden = true;
-  addLog("New game.", "clash");
-  render();
-}
-
 function setup() {
-  createControls("blue");
-  createControls("red");
+  createActionControls("blue");
+  createDirectionControls("blue");
+  createActionControls("red");
+  createDirectionControls("red");
+
   document.getElementById("cpuToggle").addEventListener("change", (event) => {
     state.cpuRed = event.target.checked;
-    addLog(state.cpuRed ? "Red set to CPU." : "Red set to human.", "clash");
+    addLog(state.cpuRed ? "Red is CPU." : "Red is human.", "hot");
     render();
   });
   document.getElementById("newGameButton").addEventListener("click", resetGame);
@@ -93,54 +64,86 @@ function setup() {
     state.log = [];
     renderLog();
   });
+
   resetGame();
 }
 
-function createControls(playerId) {
-  const container = document.getElementById(`${playerId}Controls`);
-  Object.entries(MOVES).forEach(([moveId, move]) => {
+function createActionControls(playerId) {
+  const container = document.getElementById(`${playerId}Actions`);
+  Object.entries(ACTIONS).forEach(([actionId, action]) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `move-button move-${moveId}`;
+    button.className = "choice-button";
     button.dataset.player = playerId;
-    button.dataset.move = moveId;
-    button.textContent = move.icon;
-    button.title = move.label;
-    button.addEventListener("click", () => chooseMove(playerId, moveId));
+    button.dataset.action = actionId;
+    button.textContent = action.label;
+    button.title = action.label;
+    button.addEventListener("click", () => chooseAction(playerId, actionId));
     container.appendChild(button);
   });
 }
 
-function chooseMove(playerId, moveId) {
-  if (state.gameOver) return;
-  if (playerId === "red" && state.cpuRed) return;
-  state.players[playerId].move = moveId;
+function createDirectionControls(playerId) {
+  const container = document.getElementById(`${playerId}Directions`);
+  Object.entries(DIRECTIONS).forEach(([directionId, direction]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `choice-button dir-${directionId}`;
+    button.dataset.player = playerId;
+    button.dataset.direction = directionId;
+    button.textContent = direction.label;
+    button.title = directionId;
+    button.addEventListener("click", () => chooseDirection(playerId, directionId));
+    container.appendChild(button);
+  });
+}
+
+function resetGame() {
+  state.turn = 1;
+  state.gameOver = false;
+  state.marks = { strike: [], clash: null };
+  state.log = [];
+  state.cells = Array.from({ length: SIZE * SIZE }, () => ({ owner: null }));
+  state.players.blue = makePlayer("blue", "Blue", { r: 0, c: 0 });
+  state.players.red = makePlayer("red", "Red", { r: SIZE - 1, c: SIZE - 1 });
+  state.cells[indexOf(state.players.blue.pos)].owner = "blue";
+  state.cells[indexOf(state.players.red.pos)].owner = "red";
+  placeGold();
+  modalEl.hidden = true;
+  addLog("New duel.", "hot");
+  render();
+}
+
+function chooseAction(playerId, actionId) {
+  if (state.gameOver || isCpu(playerId)) return;
+  state.players[playerId].action = actionId;
   renderControls();
+}
+
+function chooseDirection(playerId, directionId) {
+  if (state.gameOver || isCpu(playerId)) return;
+  state.players[playerId].direction = directionId;
+  renderControls();
+}
+
+function isCpu(playerId) {
+  return playerId === "red" && state.cpuRed;
 }
 
 function playTurn() {
   if (state.gameOver) return;
-  if (state.cpuRed) {
-    state.players.red.move = chooseCpuMove();
-  }
+  if (state.cpuRed) chooseCpuPlan();
 
-  const blue = state.players.blue;
-  const red = state.players.red;
-  const blueStart = { ...blue.pos };
-  const redStart = { ...red.pos };
-  const blueTarget = targetFor(blue.pos, blue.move);
-  const redTarget = targetFor(red.pos, red.move);
-  state.lastClashIndex = null;
+  state.marks = { strike: [], clash: null };
+  const bluePlan = makePlan("blue");
+  const redPlan = makePlan("red");
+  const strikeHits = resolveStrikes(bluePlan, redPlan);
 
-  if (samePos(blueTarget, redTarget)) {
-    resolveClash(blueTarget, blueStart, redStart);
-  } else {
-    blue.pos = blueTarget;
-    red.pos = redTarget;
-    claim("blue", blue.pos);
-    claim("red", red.pos);
-    addLog(`Blue ${MOVES[blue.move].label}. Red ${MOVES[red.move].label}.`, "clash");
-  }
+  applyMovement("blue", bluePlan, strikeHits.blue);
+  applyMovement("red", redPlan, strikeHits.red);
+  resolveEndClash(bluePlan, redPlan, strikeHits);
+
+  addTurnSummary(bluePlan, redPlan, strikeHits);
 
   if (state.turn >= MAX_TURNS) {
     finishGame();
@@ -152,59 +155,210 @@ function playTurn() {
   render();
 }
 
-function targetFor(pos, moveId) {
-  const move = MOVES[moveId];
-  const next = { r: pos.r + move.dr, c: pos.c + move.dc };
-  return inBounds(next) ? next : { ...pos };
+function makePlan(playerId) {
+  const player = state.players[playerId];
+  const path = pathFor(player.pos, player.direction, ACTIONS[player.action].steps);
+  const strikeTarget = player.action === "strike" ? targetFor(player.pos, player.direction, 1) : null;
+  return {
+    playerId,
+    start: { ...player.pos },
+    action: player.action,
+    direction: player.direction,
+    path,
+    end: path.length ? path[path.length - 1] : { ...player.pos },
+    strikeTarget
+  };
 }
 
-function resolveClash(target, blueStart, redStart) {
-  const blueRoll = roll();
-  const redRoll = roll();
-  state.lastClashIndex = cellIndex(target);
+function resolveStrikes(bluePlan, redPlan) {
+  const hits = { blue: null, red: null };
+  evaluateStrike(bluePlan, redPlan, hits);
+  evaluateStrike(redPlan, bluePlan, hits);
+  return hits;
+}
 
-  if (blueRoll > redRoll) {
-    state.players.blue.pos = target;
-    state.players.red.pos = redStart;
-    claim("blue", target);
-    claim("red", redStart);
-    addLog(`Clash: Blue ${blueRoll}, Red ${redRoll}. Blue wins.`, "blue");
-  } else if (redRoll > blueRoll) {
-    state.players.blue.pos = blueStart;
-    state.players.red.pos = target;
-    claim("blue", blueStart);
-    claim("red", target);
-    addLog(`Clash: Blue ${blueRoll}, Red ${redRoll}. Red wins.`, "red");
-  } else {
-    state.players.blue.pos = blueStart;
-    state.players.red.pos = redStart;
-    claim("blue", blueStart);
-    claim("red", redStart);
-    addLog(`Clash: ${blueRoll}-${redRoll}. Both bounce.`, "clash");
+function evaluateStrike(attacker, defender, hits) {
+  if (attacker.action !== "strike" || !attacker.strikeTarget) return;
+  const targetIndex = indexOf(attacker.strikeTarget);
+  state.marks.strike.push(targetIndex);
+  claim(attacker.playerId, attacker.strikeTarget);
+
+  const defenderCrossed = defender.path.some((pos) => samePos(pos, attacker.strikeTarget));
+  if (!defenderCrossed) return;
+
+  const chance = defender.action === "dash" ? 5 : 4;
+  const rollValue = roll();
+  const defenderId = defender.playerId;
+  if (rollValue <= chance) {
+    hits[defenderId] = { attackerId: attacker.playerId, roll: rollValue };
+    state.marks.clash = targetIndex;
   }
 }
 
-function claim(playerId, pos) {
-  state.cells[cellIndex(pos)].owner = playerId;
+function applyMovement(playerId, plan, hit) {
+  const player = state.players[playerId];
+  if (plan.action === "strike") {
+    player.pos = { ...plan.start };
+    claim(playerId, player.pos);
+    return;
+  }
+
+  if (hit) {
+    player.pos = { ...plan.start };
+    claim(playerId, player.pos);
+    return;
+  }
+
+  player.pos = { ...plan.end };
+  plan.path.forEach((pos) => claim(playerId, pos));
+  if (!plan.path.length) claim(playerId, player.pos);
 }
 
-function chooseCpuMove() {
+function resolveEndClash(bluePlan, redPlan, hits) {
+  if (hits.blue || hits.red) return;
+  if (!samePos(state.players.blue.pos, state.players.red.pos)) return;
+
+  const blueRoll = roll() + clashBonus(bluePlan.action);
+  const redRoll = roll() + clashBonus(redPlan.action);
+  const clashPos = { ...state.players.blue.pos };
+  state.marks.clash = indexOf(clashPos);
+
+  if (blueRoll > redRoll) {
+    state.players.red.pos = { ...redPlan.start };
+    claim("blue", clashPos);
+    claim("red", redPlan.start);
+    addLog(`Clash: Blue ${blueRoll}, Red ${redRoll}. Blue holds.`, "blue");
+  } else if (redRoll > blueRoll) {
+    state.players.blue.pos = { ...bluePlan.start };
+    claim("red", clashPos);
+    claim("blue", bluePlan.start);
+    addLog(`Clash: Blue ${blueRoll}, Red ${redRoll}. Red holds.`, "red");
+  } else {
+    state.players.blue.pos = { ...bluePlan.start };
+    state.players.red.pos = { ...redPlan.start };
+    claim("blue", bluePlan.start);
+    claim("red", redPlan.start);
+    addLog(`Clash: ${blueRoll}-${redRoll}. Both bounce.`, "hot");
+  }
+}
+
+function clashBonus(actionId) {
+  if (actionId === "move") return 2;
+  if (actionId === "strike") return 1;
+  return 0;
+}
+
+function addTurnSummary(bluePlan, redPlan, hits) {
+  const blueText = formatPlan(bluePlan);
+  const redText = formatPlan(redPlan);
+
+  if (hits.blue) {
+    addLog(`Red Strike catches Blue. Roll ${hits.blue.roll}.`, "red");
+  }
+  if (hits.red) {
+    addLog(`Blue Strike catches Red. Roll ${hits.red.roll}.`, "blue");
+  }
+  if (!hits.blue && !hits.red) {
+    addLog(`Blue ${blueText}. Red ${redText}.`, "hot");
+  }
+}
+
+function formatPlan(plan) {
+  return `${ACTIONS[plan.action].label}/${DIRECTIONS[plan.direction].label}`;
+}
+
+function chooseCpuPlan() {
   const red = state.players.red;
   const blue = state.players.blue;
   const scores = calculateScores();
-  const target = scores.red < scores.blue ? posFromIndex(state.goldIndex) : blue.pos;
-  const options = Object.keys(MOVES).map((moveId) => {
-    const next = targetFor(red.pos, moveId);
-    const distance = Math.abs(next.r - target.r) + Math.abs(next.c - target.c);
-    const ownPenalty = state.cells[cellIndex(next)].owner === "red" ? 0.45 : 0;
-    return { moveId, rank: distance + ownPenalty + Math.random() * 0.9 };
-  });
-  options.sort((a, b) => a.rank - b.rank);
-  return options[0].moveId;
+  const close = distance(red.pos, blue.pos) <= 2;
+  const gold = posFromIndex(state.goldIndex);
+
+  if (close && Math.random() < 0.36) {
+    red.action = "strike";
+    red.direction = bestDirectionToward(red.pos, blue.pos);
+    return;
+  }
+
+  if (scores.red < scores.blue || Math.random() < 0.38) {
+    red.action = Math.random() < 0.62 ? "dash" : "move";
+    red.direction = bestDirectionToward(red.pos, gold);
+    return;
+  }
+
+  red.action = Math.random() < 0.28 ? "strike" : "move";
+  red.direction = bestDirectionToward(red.pos, blue.pos);
+}
+
+function bestDirectionToward(from, target) {
+  return Object.keys(DIRECTIONS)
+    .map((directionId) => {
+      const next = targetFor(from, directionId, 1);
+      return {
+        directionId,
+        rank: distance(next, target) + Math.random() * 0.5
+      };
+    })
+    .sort((a, b) => a.rank - b.rank)[0].directionId;
+}
+
+function pathFor(start, directionId, steps) {
+  const path = [];
+  let cursor = { ...start };
+  for (let i = 0; i < steps; i += 1) {
+    const next = targetFor(cursor, directionId, 1);
+    if (samePos(next, cursor)) break;
+    path.push(next);
+    cursor = next;
+  }
+  return path;
+}
+
+function targetFor(start, directionId, steps) {
+  let cursor = { ...start };
+  for (let i = 0; i < steps; i += 1) {
+    const direction = DIRECTIONS[directionId];
+    const next = { r: cursor.r + direction.dr, c: cursor.c + direction.dc };
+    if (!inside(next)) return cursor;
+    cursor = next;
+  }
+  return cursor;
+}
+
+function inside(pos) {
+  return pos.r >= 0 && pos.c >= 0 && pos.r < SIZE && pos.c < SIZE;
+}
+
+function indexOf(pos) {
+  return pos.r * SIZE + pos.c;
+}
+
+function posFromIndex(index) {
+  return { r: Math.floor(index / SIZE), c: index % SIZE };
+}
+
+function samePos(a, b) {
+  return a.r === b.r && a.c === b.c;
+}
+
+function distance(a, b) {
+  return Math.abs(a.r - b.r) + Math.abs(a.c - b.c);
+}
+
+function roll() {
+  return randomInt(6) + 1;
+}
+
+function randomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
+function claim(playerId, pos) {
+  state.cells[indexOf(pos)].owner = playerId;
 }
 
 function placeGold() {
-  const occupied = new Set(PLAYERS.map((id) => cellIndex(state.players[id].pos)));
+  const occupied = new Set(PLAYERS.map((id) => indexOf(state.players[id].pos)));
   const candidates = state.cells
     .map((_, index) => index)
     .filter((index) => !occupied.has(index));
@@ -231,7 +385,7 @@ function finishGame() {
   document.getElementById("resultTitle").textContent = title;
   document.getElementById("resultCopy").textContent = `Blue ${scores.blue} - Red ${scores.red}`;
   modalEl.hidden = false;
-  addLog(`${title}.`, "clash");
+  addLog(`${title}.`, "hot");
 }
 
 function addLog(message, type) {
@@ -275,7 +429,8 @@ function renderBoard() {
     tile.className = "cell";
     if (cell.owner) tile.classList.add(`${cell.owner}-owned`);
     if (index === state.goldIndex) tile.classList.add("gold-cell");
-    if (index === state.lastClashIndex) tile.classList.add("last-clash");
+    if (state.marks.strike.includes(index)) tile.classList.add("strike-cell");
+    if (state.marks.clash === index) tile.classList.add("clash-cell");
     tile.setAttribute("aria-label", labelForCell(index, cell));
 
     const pos = posFromIndex(index);
@@ -307,18 +462,29 @@ function labelForCell(index, cell) {
 function renderControls() {
   PLAYERS.forEach((playerId) => {
     const player = state.players[playerId];
-    const isCpu = playerId === "red" && state.cpuRed;
-    document.querySelectorAll(`[data-player="${playerId}"][data-move]`).forEach((button) => {
-      const selected = button.dataset.move === player.move;
-      button.classList.toggle("selected", selected && !isCpu);
-      button.classList.toggle("cpu-disabled", isCpu);
-      button.disabled = state.gameOver || isCpu;
+    const cpu = isCpu(playerId);
+    document.querySelectorAll(`[data-player="${playerId}"][data-action]`).forEach((button) => {
+      const selected = button.dataset.action === player.action;
+      button.classList.toggle("selected", selected && !cpu);
+      button.classList.toggle("cpu-disabled", cpu);
+      button.disabled = state.gameOver || cpu;
+    });
+    document.querySelectorAll(`[data-player="${playerId}"][data-direction]`).forEach((button) => {
+      const selected = button.dataset.direction === player.direction;
+      button.classList.toggle("selected", selected && !cpu);
+      button.classList.toggle("cpu-disabled", cpu);
+      button.disabled = state.gameOver || cpu;
     });
   });
 
-  document.getElementById("blueChoiceLabel").textContent = MOVES[state.players.blue.move].label;
-  document.getElementById("redChoiceLabel").textContent = state.cpuRed ? "CPU" : MOVES[state.players.red.move].label;
+  document.getElementById("bluePlanLabel").textContent = planLabel("blue");
+  document.getElementById("redPlanLabel").textContent = state.cpuRed ? "CPU" : planLabel("red");
   document.getElementById("playTurnButton").disabled = state.gameOver;
+}
+
+function planLabel(playerId) {
+  const player = state.players[playerId];
+  return `${ACTIONS[player.action].label} / ${DIRECTIONS[player.direction].label}`;
 }
 
 function renderLog() {

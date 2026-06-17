@@ -5,11 +5,13 @@ Flux Duel is a small browser game prototype for a simultaneous-input area duel.
 ## Game
 
 - 5x5 board
-- 10 turns
-- Blue and Red choose one move at the same time
-- Landing on a tile claims it
-- The gold tile is worth 3 points while owned
-- If both players land on the same tile, both roll a die and the higher roll wins the tile
+- 12 turns
+- Blue and Red choose an action and direction at the same time
+- Move claims 1 tile
+- Dash claims up to 2 tiles
+- Strike claims an adjacent tile and can stop an opponent that crosses it
+- Gold is worth 3 points while owned
+- The higher score after turn 12 wins
 
 ## Run
 

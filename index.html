@@ -10,7 +10,7 @@
     <main class="app-shell">
       <header class="top-bar">
         <div>
-          <p class="eyebrow">Area duel</p>
+          <p class="eyebrow">3-choice area duel</p>
           <h1>Flux Duel</h1>
         </div>
         <div class="top-actions">
@@ -23,54 +23,68 @@
       </header>
 
       <section class="scorebar" aria-label="Score">
-        <div class="score-pill blue-pill">
+        <div class="score-card blue-card">
           <span>Blue</span>
           <strong id="blueScore">0</strong>
         </div>
-        <div class="turn-pill">
+        <div class="turn-card">
           <span>Turn</span>
-          <strong><span id="turnNumber">1</span>/<span id="turnLimit">10</span></strong>
+          <strong><span id="turnNumber">1</span>/<span id="turnLimit">12</span></strong>
         </div>
-        <div class="score-pill red-pill">
+        <div class="score-card red-card">
           <span>Red</span>
           <strong id="redScore">0</strong>
         </div>
       </section>
 
-      <section class="play-area">
-        <aside class="side-panel">
+      <section class="game-grid">
+        <aside class="control-panel blue-panel" aria-label="Blue controls">
           <div class="panel-title">
-            <h2>Blue Move</h2>
-            <span id="blueChoiceLabel">Stay</span>
+            <h2>Blue</h2>
+            <span id="bluePlanLabel">Move / C</span>
           </div>
-          <div id="blueControls" class="move-pad" aria-label="Blue move controls"></div>
+          <div class="choice-group">
+            <span class="group-label">Action</span>
+            <div id="blueActions" class="action-row"></div>
+          </div>
+          <div class="choice-group">
+            <span class="group-label">Direction</span>
+            <div id="blueDirections" class="direction-pad"></div>
+          </div>
           <button id="playTurnButton" class="primary-button" type="button">Play Turn</button>
         </aside>
 
-        <section class="board-wrap" aria-label="Game board">
+        <section class="board-zone" aria-label="Game board">
           <div id="board" class="board"></div>
-          <div class="legend" aria-label="Board legend">
+          <div class="legend" aria-label="Legend">
             <span><b class="dot blue-dot"></b>Blue</span>
             <span><b class="dot red-dot"></b>Red</span>
-            <span><b class="dot gold-dot"></b>Gold x3</span>
-            <span><b class="dot clash-dot"></b>Clash</span>
+            <span><b class="dot gold-dot"></b>Gold +2</span>
+            <span><b class="dot danger-dot"></b>Strike</span>
           </div>
         </section>
 
-        <aside class="side-panel red-panel">
+        <aside class="control-panel red-panel" aria-label="Red controls">
           <div class="panel-title">
-            <h2>Red Move</h2>
-            <span id="redChoiceLabel">CPU</span>
+            <h2>Red</h2>
+            <span id="redPlanLabel">CPU</span>
           </div>
-          <div id="redControls" class="move-pad" aria-label="Red move controls"></div>
-          <div class="round-card">
+          <div class="choice-group">
+            <span class="group-label">Action</span>
+            <div id="redActions" class="action-row"></div>
+          </div>
+          <div class="choice-group">
+            <span class="group-label">Direction</span>
+            <div id="redDirections" class="direction-pad"></div>
+          </div>
+          <div class="state-stack">
             <span id="leadLabel">Even</span>
             <strong id="goldLabel">Gold: open</strong>
           </div>
         </aside>
       </section>
 
-      <section class="feed-panel">
+      <section class="log-panel">
         <div class="panel-title">
           <h2>Round Log</h2>
           <button id="clearLogButton" class="tiny-button" type="button">Clear</button>
