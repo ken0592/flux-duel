@@ -10,107 +10,81 @@
     <main class="app-shell">
       <header class="top-bar">
         <div>
-          <p class="eyebrow">Simultaneous area duel</p>
+          <p class="eyebrow">Area duel</p>
           <h1>Flux Duel</h1>
         </div>
-        <div class="match-tools">
+        <div class="top-actions">
           <label class="toggle">
             <input id="cpuToggle" type="checkbox" checked>
             <span>CPU Red</span>
           </label>
-          <button id="newMatchButton" class="ghost-button" type="button">New Match</button>
+          <button id="newGameButton" class="secondary-button" type="button">New Game</button>
         </div>
       </header>
 
-      <section class="score-strip" aria-label="Match score">
-        <div class="score-card blue-side">
-          <span class="score-label">Blue</span>
+      <section class="scorebar" aria-label="Score">
+        <div class="score-pill blue-pill">
+          <span>Blue</span>
           <strong id="blueScore">0</strong>
-          <span id="blueStatus">Ready</span>
         </div>
-        <div class="round-card">
-          <span>Round</span>
-          <strong><span id="roundNumber">1</span>/<span id="roundLimit">12</span></strong>
-          <button id="resolveButton" type="button">Resolve</button>
+        <div class="turn-pill">
+          <span>Turn</span>
+          <strong><span id="turnNumber">1</span>/<span id="turnLimit">10</span></strong>
         </div>
-        <div class="score-card red-side">
-          <span class="score-label">Red</span>
+        <div class="score-pill red-pill">
+          <span>Red</span>
           <strong id="redScore">0</strong>
-          <span id="redStatus">Ready</span>
         </div>
       </section>
 
-      <section class="game-layout">
-        <aside class="player-panel blue-panel" aria-label="Blue controls">
-          <div class="panel-heading">
-            <h2>Blue</h2>
-            <span id="blueLockBadge" class="lock-badge">Open</span>
+      <section class="play-area">
+        <aside class="side-panel">
+          <div class="panel-title">
+            <h2>Blue Move</h2>
+            <span id="blueChoiceLabel">Stay</span>
           </div>
-          <div class="control-group">
-            <span class="group-label">Action</span>
-            <div id="blueActions" class="button-grid action-grid"></div>
-          </div>
-          <div class="control-group">
-            <span class="group-label">Direction</span>
-            <div id="blueDirections" class="button-grid dir-grid"></div>
-          </div>
-          <button id="blueLock" class="lock-button blue-lock" type="button">Lock Blue</button>
+          <div id="blueControls" class="move-pad" aria-label="Blue move controls"></div>
+          <button id="playTurnButton" class="primary-button" type="button">Play Turn</button>
         </aside>
 
-        <section class="board-zone" aria-label="Game board">
+        <section class="board-wrap" aria-label="Game board">
           <div id="board" class="board"></div>
-          <div class="legend" aria-label="Tile legend">
-            <span><b class="legend-dot bonus"></b>Bonus</span>
-            <span><b class="legend-dot bloom"></b>Bloom</span>
-            <span><b class="legend-dot slip"></b>Slip</span>
-            <span><b class="legend-dot rift"></b>Rift</span>
-            <span><b class="legend-dot static"></b>Static</span>
+          <div class="legend" aria-label="Board legend">
+            <span><b class="dot blue-dot"></b>Blue</span>
+            <span><b class="dot red-dot"></b>Red</span>
+            <span><b class="dot gold-dot"></b>Gold x3</span>
+            <span><b class="dot clash-dot"></b>Clash</span>
           </div>
         </section>
 
-        <aside class="player-panel red-panel" aria-label="Red controls">
-          <div class="panel-heading">
-            <h2>Red</h2>
-            <span id="redLockBadge" class="lock-badge">Open</span>
+        <aside class="side-panel red-panel">
+          <div class="panel-title">
+            <h2>Red Move</h2>
+            <span id="redChoiceLabel">CPU</span>
           </div>
-          <div class="control-group">
-            <span class="group-label">Action</span>
-            <div id="redActions" class="button-grid action-grid"></div>
+          <div id="redControls" class="move-pad" aria-label="Red move controls"></div>
+          <div class="round-card">
+            <span id="leadLabel">Even</span>
+            <strong id="goldLabel">Gold: open</strong>
           </div>
-          <div class="control-group">
-            <span class="group-label">Direction</span>
-            <div id="redDirections" class="button-grid dir-grid"></div>
-          </div>
-          <button id="redLock" class="lock-button red-lock" type="button">Lock Red</button>
         </aside>
       </section>
 
-      <section class="lower-deck">
-        <div class="feed-panel">
-          <div class="panel-heading">
-            <h2>Match Feed</h2>
-            <button id="clearFeedButton" class="tiny-button" type="button">Clear</button>
-          </div>
-          <ol id="feed" class="feed"></ol>
+      <section class="feed-panel">
+        <div class="panel-title">
+          <h2>Round Log</h2>
+          <button id="clearLogButton" class="tiny-button" type="button">Clear</button>
         </div>
-        <div class="rules-panel">
-          <h2>Board State</h2>
-          <div class="stat-grid">
-            <span>Neutral</span><strong id="neutralCount">0</strong>
-            <span>Flux</span><strong id="fluxCount">0</strong>
-            <span>Traps</span><strong id="trapCount">0</strong>
-            <span>Lead</span><strong id="leadText">Even</strong>
-          </div>
-        </div>
+        <ol id="log" class="log"></ol>
       </section>
     </main>
 
-    <div id="matchModal" class="modal-backdrop" hidden>
+    <div id="resultModal" class="modal-backdrop" hidden>
       <section class="result-modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
         <p class="eyebrow">Final score</p>
-        <h2 id="resultTitle">Match Complete</h2>
+        <h2 id="resultTitle">Game Complete</h2>
         <p id="resultCopy"></p>
-        <button id="modalNewMatchButton" type="button">Play Again</button>
+        <button id="modalNewGameButton" class="primary-button" type="button">Play Again</button>
       </section>
     </div>
 
